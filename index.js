@@ -10,7 +10,7 @@ app.use(express.urlencoded({
 //If you don't plan on using SendGrid with the REST method below or
 //if your dev environment isn't localhost but a secure HTTPS standard website URL,
 //then you will not need this line and shouldn't use it (for security)
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+//process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const port = process.env.PORT || 3000;
 const environment = process.env.ENVIRONMENT || 'sandbox';
 const client_id = process.env.CLIENT_ID;

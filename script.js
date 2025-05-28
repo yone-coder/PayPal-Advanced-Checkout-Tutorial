@@ -1,6 +1,10 @@
 // Helper / Utility functions
 let current_customer_id;
 let order_id;
+
+// Replace this URL with your actual Render.com backend URL
+const API_BASE_URL = "https://your-app-name.onrender.com";
+
 let script_to_head = (attributes_object) => {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
@@ -12,6 +16,7 @@ let script_to_head = (attributes_object) => {
       script.addEventListener('error', reject);
     });
 }
+
 let reset_purchase_button = () => {
     document.querySelector("#card-form").querySelector("input[type='submit']").removeAttribute("disabled");
     document.querySelector("#card-form").querySelector("input[type='submit']").value = "Purchase";
@@ -27,8 +32,9 @@ const is_user_logged_in = () => {
 const get_client_token = () => {
   return new Promise(async (resolve, reject) => {
     try {
-      const response = await fetch("http://localhost:3000/get_client_token", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+      const response = await fetch(`${API_BASE_URL}/get_client_token`, {
+        method: "POST", 
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ "customer_id": current_customer_id }),
       });
 
@@ -39,15 +45,19 @@ const get_client_token = () => {
     }
   });
 }
+
 let handle_close = (event) => {
     event.target.closest(".ms-alert").remove();
 }
+
 let handle_click = (event) => {
     if (event.target.classList.contains("ms-close")) {
         handle_close(event);
     }
 }
+
 document.addEventListener("click", handle_click);
+
 const paypal_sdk_url = "https://www.paypal.com/sdk/js";
 const client_id = "AU23YbLMTqxG3iSvnhcWtix6rGN14uw3axYJgrDe8VqUVng8XiQmmeiaxJWbnpbZP_f4--RTg146F1Mj";
 const currency = "USD";
@@ -56,13 +66,14 @@ const intent = "capture";
 let display_error_alert = () => {
     document.getElementById("alerts").innerHTML = `<div class="ms-alert ms-action2 ms-small"><span class="ms-close"></span><p>An Error Ocurred! (View console for more info)</p>  </div>`;
 }
+
 let display_success_message = (object) => {
     order_details = object.order_details;
     paypal_buttons = object.paypal_buttons;
     console.log(order_details); //https://developer.paypal.com/docs/api/orders/v2/#orders_capture!c=201&path=create_time&t=response
     let intent_object = intent === "authorize" ? "authorizations" : "captures";
     //Custom Successful Message
-    document.getElementById("alerts").innerHTML = `<div class=\'ms-alert ms-action\'>Thank you ` + (order_details?.payer?.name?.given_name || ``) + ` ` + (order_details?.payer?.name?.surname || ``) + ` for your payment of ` + order_details.purchase_units[0].payments[intent_object][0].amount.value + ` ` + order_details.purchase_units[0].payments[intent_object][0].amount.currency_code + `!</div>`;
+    document.getElementById("alerts").innerHTML = `<div class='ms-alert ms-action'>Thank you ` + (order_details?.payer?.name?.given_name || ``) + ` ` + (order_details?.payer?.name?.surname || ``) + ` for your payment of ` + order_details.purchase_units[0].payments[intent_object][0].amount.value + ` ` + order_details.purchase_units[0].payments[intent_object][0].amount.currency_code + `!</div>`;
 
     //Close out the PayPal buttons that were rendered
     paypal_buttons.close();
@@ -94,8 +105,9 @@ is_user_logged_in()
         },
 
         createOrder: function(data, actions) { //https://developer.paypal.com/docs/api/orders/v2/#orders_create
-            return fetch("http://localhost:3000/create_order", {
-                method: "post", headers: { "Content-Type": "application/json; charset=utf-8" },
+            return fetch(`${API_BASE_URL}/create_order`, {
+                method: "post", 
+                headers: { "Content-Type": "application/json; charset=utf-8" },
                 body: JSON.stringify({ "intent": intent })
             })
             .then((response) => response.json())
@@ -105,8 +117,9 @@ is_user_logged_in()
         onApprove: function(data, actions) {
             order_id = data.orderID;
             console.log(data);
-            return fetch("http://localhost:3000/complete_order", {
-                method: "post", headers: { "Content-Type": "application/json; charset=utf-8" },
+            return fetch(`${API_BASE_URL}/complete_order`, {
+                method: "post", 
+                headers: { "Content-Type": "application/json; charset=utf-8" },
                 body: JSON.stringify({
                     "intent": intent,
                     "order_id": order_id
@@ -131,14 +144,16 @@ is_user_logged_in()
         }
     });
     paypal_buttons.render('#payment_options');
+    
     //Hosted Fields
     if (paypal.HostedFields.isEligible()) {
         // Renders card fields
         paypal_hosted_fields = paypal.HostedFields.render({
           // Call your server to set up the transaction
           createOrder: () => {
-            return fetch("http://localhost:3000/create_order", {
-                method: "post", headers: { "Content-Type": "application/json; charset=utf-8" },
+            return fetch(`${API_BASE_URL}/create_order`, {
+                method: "post", 
+                headers: { "Content-Type": "application/json; charset=utf-8" },
                 body: JSON.stringify({ "intent": intent })
             })
             .then((response) => response.json())
@@ -203,8 +218,9 @@ is_user_logged_in()
                 //Customer Data END
               )
               .then(() => {
-                return fetch("http://localhost:3000/complete_order", {
-                    method: "post", headers: { "Content-Type": "application/json; charset=utf-8" },
+                return fetch(`${API_BASE_URL}/complete_order`, {
+                    method: "post", 
+                    headers: { "Content-Type": "application/json; charset=utf-8" },
                     body: JSON.stringify({
                         "intent": intent,
                         "order_id": order_id,

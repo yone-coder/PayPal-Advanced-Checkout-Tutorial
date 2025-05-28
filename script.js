@@ -3,7 +3,7 @@ let current_customer_id;
 let order_id;
 
 // Replace this URL with your actual Render.com backend URL
-const API_BASE_URL = "https://your-app-name.onrender.com";
+const API_BASE_URL = "https://paypal-with-nodejs.onrender.com";
 
 let script_to_head = (attributes_object) => {
     return new Promise((resolve, reject) => {

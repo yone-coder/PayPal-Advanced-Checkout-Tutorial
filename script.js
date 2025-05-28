@@ -67,85 +67,31 @@ let display_error_alert = () => {
     document.getElementById("alerts").innerHTML = `<div class="ms-alert ms-action2 ms-small"><span class="ms-close"></span><p>An Error Ocurred! (View console for more info)</p>  </div>`;
 }
 
-let display_success_message = (object) => {
-    order_details = object.order_details;
-    paypal_buttons = object.paypal_buttons;
+let display_success_message = (order_details) => {
     console.log(order_details); //https://developer.paypal.com/docs/api/orders/v2/#orders_capture!c=201&path=create_time&t=response
     let intent_object = intent === "authorize" ? "authorizations" : "captures";
     //Custom Successful Message
     document.getElementById("alerts").innerHTML = `<div class='ms-alert ms-action'>Thank you ` + (order_details?.payer?.name?.given_name || ``) + ` ` + (order_details?.payer?.name?.surname || ``) + ` for your payment of ` + order_details.purchase_units[0].payments[intent_object][0].amount.value + ` ` + order_details.purchase_units[0].payments[intent_object][0].amount.currency_code + `!</div>`;
 
-    //Close out the PayPal buttons that were rendered
-    paypal_buttons.close();
+    //Hide the card form after successful payment
     document.getElementById("card-form").classList.add("hide");
 }
 
-//PayPal Code
+//PayPal Code - Forms Only
 is_user_logged_in()
 .then(() => {
     return get_client_token();
 })
 .then((client_token) => {
     //https://developer.paypal.com/sdk/js/configuration/#link-queryparameters
-    return script_to_head({"src": paypal_sdk_url + "?client-id=" + client_id + "&enable-funding=venmo&currency=" + currency + "&intent=" + intent + "&components=buttons,hosted-fields", "data-client-token": client_token}) //https://developer.paypal.com/sdk/js/configuration/#link-configureandcustomizeyourintegration
+    return script_to_head({"src": paypal_sdk_url + "?client-id=" + client_id + "&enable-funding=venmo&currency=" + currency + "&intent=" + intent + "&components=hosted-fields", "data-client-token": client_token}) //https://developer.paypal.com/sdk/js/configuration/#link-configureandcustomizeyourintegration
 })
 .then(() => {
     //Handle loading spinner
     document.getElementById("loading").classList.add("hide");
     document.getElementById("content").classList.remove("hide");
-    let paypal_buttons = paypal.Buttons({ // https://developer.paypal.com/sdk/js/reference
-        onClick: (data) => { // https://developer.paypal.com/sdk/js/reference/#link-oninitonclick
-            //Custom JS here
-        },
-        style: { //https://developer.paypal.com/sdk/js/reference/#link-style
-            shape: 'rect',
-            color: 'gold',
-            layout: 'vertical',
-            label: 'paypal'
-        },
 
-        createOrder: function(data, actions) { //https://developer.paypal.com/docs/api/orders/v2/#orders_create
-            return fetch(`${API_BASE_URL}/create_order`, {
-                method: "post", 
-                headers: { "Content-Type": "application/json; charset=utf-8" },
-                body: JSON.stringify({ "intent": intent })
-            })
-            .then((response) => response.json())
-            .then((order) => { return order.id; });
-        },
-
-        onApprove: function(data, actions) {
-            order_id = data.orderID;
-            console.log(data);
-            return fetch(`${API_BASE_URL}/complete_order`, {
-                method: "post", 
-                headers: { "Content-Type": "application/json; charset=utf-8" },
-                body: JSON.stringify({
-                    "intent": intent,
-                    "order_id": order_id
-                })
-            })
-            .then((response) => response.json())
-            .then((order_details) => {
-                display_success_message({"order_details": order_details, "paypal_buttons": paypal_buttons});
-             })
-             .catch((error) => {
-                console.log(error);
-                display_error_alert()
-             });
-        },
-
-        onCancel: function (data) {
-            document.getElementById("alerts").innerHTML = `<div class="ms-alert ms-action2 ms-small"><span class="ms-close"></span><p>Order cancelled!</p>  </div>`;
-        },
-
-        onError: function(err) {
-            console.log(err);
-        }
-    });
-    paypal_buttons.render('#payment_options');
-    
-    //Hosted Fields
+    //Hosted Fields Only
     if (paypal.HostedFields.isEligible()) {
         // Renders card fields
         paypal_hosted_fields = paypal.HostedFields.render({
@@ -229,7 +175,7 @@ is_user_logged_in()
                 })
                 .then((response) => response.json())
                 .then((order_details) => {
-                    display_success_message({"order_details": order_details, "paypal_buttons": paypal_buttons});
+                    display_success_message(order_details);
                  })
                  .catch((error) => {
                     console.log(error);
@@ -243,8 +189,12 @@ is_user_logged_in()
               });
           });
         });
+      } else {
+        // Show message if hosted fields are not available
+        document.getElementById("alerts").innerHTML = `<div class="ms-alert ms-action2 ms-small"><span class="ms-close"></span><p>Card payment form is not available in this browser.</p></div>`;
       }
 })
 .catch((error) => {
     reset_purchase_button();
+    display_error_alert();
 });

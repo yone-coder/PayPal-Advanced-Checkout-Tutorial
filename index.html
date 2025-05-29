@@ -130,26 +130,14 @@
         font-size: 1rem;
       }
 
-      /* Card Fields Container */
-      .card-fields-container {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-
-      /* Card Number Field */
-      .card-number-field {
-        width: 100%;
-      }
-
       /* Card Row for Date and CVV */
       .card-row {
         display: flex;
         gap: 0.75rem;
-        align-items: stretch;
+        margin-top: 0.5rem;
       }
 
-      .card-row > * {
+      .card-row .card-field {
         flex: 1;
       }
 
@@ -343,14 +331,10 @@
             <!-- Card Information -->
             <div class="form-group">
               <label class="form-label">Card information</label>
-              <div class="card-fields-container">
-                <div class="card-number-field">
-                  <div class="card-field" id="card-number"></div>
-                </div>
-                <div class="card-row">
-                  <div class="card-field" id="expiration-date"></div>
-                  <div class="card-field" id="cvv"></div>
-                </div>
+              <div class="card-field" id="card-number"></div>
+              <div class="card-row">
+                <div class="card-field" id="expiration-date"></div>
+                <div class="card-field" id="cvv"></div>
               </div>
             </div>
             

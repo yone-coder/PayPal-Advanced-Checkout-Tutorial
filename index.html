@@ -5,99 +5,397 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>PPCP Advanced</title>
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/minstyle.io@2.0.1/dist/css/minstyle.io.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-      .hide {
-          display:none !important;
-      }
-      .spinner-container {
-          width: 100px;
-          height: 100px;
-          display: flex;
-          justify-content: center;
-          align-items: center;
+      :root {
+        --bg-primary: #0a0a0f;
+        --bg-secondary: #1a1a2e;
+        --bg-card: rgba(26, 26, 46, 0.7);
+        --text-primary: #ffffff;
+        --text-secondary: #a0a0b8;
+        --accent-primary: #6366f1;
+        --accent-secondary: #8b5cf6;
+        --success: #10b981;
+        --error: #ef4444;
+        --border: rgba(255, 255, 255, 0.1);
+        --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        --glow: 0 0 40px rgba(99, 102, 241, 0.15);
       }
 
-      .div_input {
-        display: inline-block;
-        height: 40px;
-        width: 100%;
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        appearance: none;
-        -webkit-box-sizing: border-box;
-        box-sizing: border-box;
-        -webkit-box-shadow: none;
-        box-shadow: none;
-        font-size: 0.98rem;
-        background-color: rgba(var(--main-bg), 1);
-        border: 2px solid rgba(var(--default-border-color), 1);
-        border-radius: var(--default-border-radius);
+      * {
         margin: 0;
-        padding: 0 0.8rem;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+        min-height: 100vh;
+        color: var(--text-primary);
+        line-height: 1.6;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: 
+          radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+          radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%);
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      .container {
+        max-width: 500px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .card {
+        background: var(--bg-card);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 2.5rem;
+        box-shadow: var(--shadow);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      }
+
+      .card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--glow), var(--shadow);
+      }
+
+      .title {
+        font-size: 2rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .price {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      .price-tag {
+        display: inline-block;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--accent-primary);
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        padding: 0.75rem 1.5rem;
+        border: 1px solid var(--accent-primary);
+        border-radius: 50px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .price-tag::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.1), transparent);
+        transition: left 0.6s ease;
+      }
+
+      .price-tag:hover::before {
+        left: 100%;
+      }
+
+      .nft-image {
+        width: 100%;
+        max-width: 350px;
+        height: auto;
+        border-radius: 16px;
+        margin: 0 auto 2rem;
+        display: block;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        transition: transform 0.3s ease;
+      }
+
+      .nft-image:hover {
+        transform: scale(1.02);
+      }
+
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+
+      .form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .form-input, .div_input {
+        width: 100%;
+        padding: 1rem 1.25rem;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        color: var(--text-primary);
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+      }
+
+      .form-input:focus, .div_input:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      }
+
+      .form-input::placeholder {
+        color: var(--text-secondary);
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+
+      .purchase-btn {
+        width: 100%;
+        padding: 1.25rem;
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        position: relative;
+        overflow: hidden;
+        margin-top: 1rem;
+      }
+
+      .purchase-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+      }
+
+      .purchase-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .purchase-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.6s ease;
+      }
+
+      .purchase-btn:hover:not(:disabled)::before {
+        left: 100%;
+      }
+
+      .alert {
+        padding: 1rem 1.25rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        position: relative;
+        backdrop-filter: blur(10px);
+        animation: slideIn 0.3s ease;
+      }
+
+      .alert-success {
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        color: var(--success);
+      }
+
+      .alert-error {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: var(--error);
+      }
+
+      .alert-close {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.75rem;
+        background: none;
+        border: none;
+        color: inherit;
+        font-size: 1.25rem;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.2s ease;
+      }
+
+      .alert-close:hover {
+        opacity: 1;
+      }
+
+      .spinner-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 4rem 0;
       }
 
       .spinner {
-          border: 8px solid rgba(0, 0, 0, 0.1);
-          border-top-color: lightblue;
-          border-radius: 50%;
-          width: 50px;
-          height: 50px;
-          animation: spin 1s ease-in-out infinite;
+        width: 50px;
+        height: 50px;
+        border: 3px solid rgba(99, 102, 241, 0.1);
+        border-top: 3px solid var(--accent-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      .hide {
+        display: none !important;
+      }
+
+      .divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--border), transparent);
+        margin: 2rem 0;
+      }
+
+      .footer {
+        text-align: center;
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        margin-top: 2rem;
+        opacity: 0.7;
       }
 
       @keyframes spin {
-          to {
-              transform: rotate(360deg);
-          }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 640px) {
+        .container {
+          padding: 1rem;
+        }
+        
+        .card {
+          padding: 2rem 1.5rem;
+        }
+        
+        .title {
+          font-size: 1.75rem;
+        }
+        
+        .form-row {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <div class="row">
-        <div class="col-sm"></div>
-        <div class="col-sm">
-          <h2 class="ms-text-center">ai-generated NFT Bored Ape</h2>
-          <div class="ms-text-center pb-2">
-            <div class="ms-label ms-large ms-action2 ms-light">$100.00 USD</div>
-          </div>
-          <div id="alerts" class="ms-text-center"></div>
-          <div id="loading" class="spinner-container ms-div-center">
-            <div class="spinner"></div>
-          </div>
-          <div id="content" class="hide">
-            <div class="ms-card ms-fill">
-              <div class="ms-card-content">
-                <img src="https://cdn.discordapp.com/attachments/1060825015681028127/1076385063903694908/rauljr7_3d_e83fed6a-69aa-4a6a-b0ec-928edd57aecf.png" style="width:400px">
-              </div>
+      <div class="card">
+        <h1 class="title">AI-Generated NFT Bored Ape</h1>
+        
+        <div class="price">
+          <div class="price-tag">$100.00 USD</div>
+        </div>
+        
+        <div id="alerts"></div>
+        
+        <div id="loading" class="spinner-container">
+          <div class="spinner"></div>
+        </div>
+        
+        <div id="content" class="hide">
+          <img src="https://cdn.discordapp.com/attachments/1060825015681028127/1076385063903694908/rauljr7_3d_e83fed6a-69aa-4a6a-b0ec-928edd57aecf.png" alt="Bored Ape NFT" class="nft-image">
+          
+          <form id="card-form">
+            <div class="form-group">
+              <label for="card-number" class="form-label">Card Number</label>
+              <div class="div_input" id="card-number"></div>
             </div>
-            <div id="payment_options">
-              <form class="row ms-form-group" id="card-form">
-              <div>
-                <label for="card-number">Card Number</label>
-                <div class="div_input" type="text" id="card-number"></div>
-              </div>
-              <div class="col-md mb-2">
-                <label for="expiration-date">Expiration Date</label>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="expiration-date" class="form-label">Expiry Date</label>
                 <div id="expiration-date" class="div_input"></div>
               </div>
-              <div class="col-md mb-2">
-                <label for="cvv">Security Code</label>
+              <div class="form-group">
+                <label for="cvv" class="form-label">CVV</label>
                 <div id="cvv" class="div_input"></div>
               </div>
-              <div>
-                <label for="email">Email</label>
-                <input value placeholder="username@email.com" type="email" id="email" class="div_input" required>
-              </div>
-              <div><input class="ms-fullwidth mt-2 ms-medium" type="submit" value="Purchase"></div>
-            </form>
-              <hr><hr>
             </div>
-          </div>
+            
+            <div class="form-group">
+              <label for="email" class="form-label">Email Address</label>
+              <input type="email" id="email" class="form-input" placeholder="your@email.com" required>
+            </div>
+            
+            <button type="submit" class="purchase-btn">Purchase NFT</button>
+          </form>
+          
+          <div class="divider"></div>
         </div>
-        <div class="col-sm"></div>
-        <footer style="margin-top:50px" class="ms-footer"> Footer Intentionally left empty :) </footer>
+      </div>
+      
+      <div class="footer">
+        Secure payment powered by PayPal
       </div>
     </div>
 
@@ -122,8 +420,8 @@
       }
 
       let reset_purchase_button = () => {
-          document.querySelector("#card-form").querySelector("input[type='submit']").removeAttribute("disabled");
-          document.querySelector("#card-form").querySelector("input[type='submit']").value = "Purchase";
+          document.querySelector("#card-form").querySelector("button[type='submit']").removeAttribute("disabled");
+          document.querySelector("#card-form").querySelector("button[type='submit']").textContent = "Purchase NFT";
       }
 
       const is_user_logged_in = () => {
@@ -151,11 +449,11 @@
       }
 
       let handle_close = (event) => {
-          event.target.closest(".ms-alert").remove();
+          event.target.closest(".alert").remove();
       }
 
       let handle_click = (event) => {
-          if (event.target.classList.contains("ms-close")) {
+          if (event.target.classList.contains("alert-close")) {
               handle_close(event);
           }
       }
@@ -168,14 +466,18 @@
       const intent = "capture";
 
       let display_error_alert = () => {
-          document.getElementById("alerts").innerHTML = `<div class="ms-alert ms-action2 ms-small"><span class="ms-close"></span><p>An Error Ocurred! (View console for more info)</p>  </div>`;
+          document.getElementById("alerts").innerHTML = `<div class="alert alert-error"><button class="alert-close">×</button><p>An error occurred! Please try again.</p></div>`;
       }
 
       let display_success_message = (order_details) => {
-          console.log(order_details); //https://developer.paypal.com/docs/api/orders/v2/#orders_capture!c=201&path=create_time&t=response
+          console.log(order_details);
           let intent_object = intent === "authorize" ? "authorizations" : "captures";
-          //Custom Successful Message
-          document.getElementById("alerts").innerHTML = `<div class='ms-alert ms-action'>Thank you ` + (order_details?.payer?.name?.given_name || ``) + ` ` + (order_details?.payer?.name?.surname || ``) + ` for your payment of ` + order_details.purchase_units[0].payments[intent_object][0].amount.value + ` ` + order_details.purchase_units[0].payments[intent_object][0].amount.currency_code + `!</div>`;
+          const firstName = order_details?.payer?.name?.given_name || '';
+          const lastName = order_details?.payer?.name?.surname || '';
+          const amount = order_details.purchase_units[0].payments[intent_object][0].amount.value;
+          const currency = order_details.purchase_units[0].payments[intent_object][0].amount.currency_code;
+          
+          document.getElementById("alerts").innerHTML = `<div class='alert alert-success'>Thank you ${firstName} ${lastName} for your payment of ${amount} ${currency}! Your NFT will be delivered shortly.</div>`;
 
           //Hide the card form after successful payment
           document.getElementById("card-form").classList.add("hide");
@@ -187,8 +489,7 @@
           return get_client_token();
       })
       .then((client_token) => {
-          //https://developer.paypal.com/sdk/js/configuration/#link-queryparameters
-          return script_to_head({"src": paypal_sdk_url + "?client-id=" + client_id + "&enable-funding=venmo&currency=" + currency + "&intent=" + intent + "&components=hosted-fields", "data-client-token": client_token}) //https://developer.paypal.com/sdk/js/configuration/#link-configureandcustomizeyourintegration
+          return script_to_head({"src": paypal_sdk_url + "?client-id=" + client_id + "&enable-funding=venmo&currency=" + currency + "&intent=" + intent + "&components=hosted-fields", "data-client-token": client_token})
       })
       .then(() => {
           //Handle loading spinner
@@ -199,7 +500,6 @@
           if (paypal.HostedFields.isEligible()) {
               // Renders card fields
               paypal_hosted_fields = paypal.HostedFields.render({
-                // Call your server to set up the transaction
                 createOrder: () => {
                   return fetch(`${API_BASE_URL}/create_order`, {
                       method: "post", 
@@ -211,20 +511,21 @@
                 },
                 styles: {
                   '.valid': {
-                    color: 'green'
+                    color: '#10b981'
                   },
                   '.invalid': {
-                    color: 'red'
+                    color: '#ef4444'
                   },
                   'input': {
-                      'font-size': '16pt',
-                      'color': '#ffffff'
+                      'font-size': '16px',
+                      'color': '#ffffff',
+                      'font-family': 'Inter, sans-serif'
                   },
                 },
                 fields: {
                   number: {
                     selector: "#card-number",
-                    placeholder: "4111 1111 1111 1111"
+                    placeholder: "1234 5678 9012 3456"
                   },
                   cvv: {
                     selector: "#cvv",
@@ -238,34 +539,22 @@
               }).then((card_fields) => {
                document.querySelector("#card-form").addEventListener("submit", (event) => {
                   event.preventDefault();
-                  document.querySelector("#card-form").querySelector("input[type='submit']").setAttribute("disabled", "");
-                  document.querySelector("#card-form").querySelector("input[type='submit']").value = "Loading...";
+                  const submitBtn = document.querySelector("#card-form").querySelector("button[type='submit']");
+                  submitBtn.setAttribute("disabled", "");
+                  submitBtn.textContent = "Processing...";
+                  
                   card_fields
-                    .submit(
-                      //Customer Data BEGIN
-                      //This wasn't part of the video guide originally, but I've included it here
-                      //So you can reference how you could send customer data, which may
-                      //be a requirement of your project to pass this info to card issuers
-                      {
-                        // Cardholder's first and last name
+                    .submit({
                         cardholderName: "Raúl Uriarte, Jr.",
-                        // Billing Address
                         billingAddress: {
-                          // Street address, line 1
                           streetAddress: "123 Springfield Rd",
-                          // Street address, line 2 (Ex: Unit, Apartment, etc.)
                           extendedAddress: "",
-                          // State
                           region: "AZ",
-                          // City
                           locality: "CHANDLER",
-                          // Postal Code
                           postalCode: "85224",
-                          // Country Code
                           countryCodeAlpha2: "US",
                         },
                       }
-                      //Customer Data END
                     )
                     .then(() => {
                       return fetch(`${API_BASE_URL}/complete_order`, {
@@ -284,6 +573,7 @@
                        .catch((error) => {
                           console.log(error);
                           display_error_alert();
+                          reset_purchase_button();
                        });
                     })
                     .catch((err) => {
@@ -294,8 +584,7 @@
                 });
               });
             } else {
-              // Show message if hosted fields are not available
-              document.getElementById("alerts").innerHTML = `<div class="ms-alert ms-action2 ms-small"><span class="ms-close"></span><p>Card payment form is not available in this browser.</p></div>`;
+              document.getElementById("alerts").innerHTML = `<div class="alert alert-error"><button class="alert-close">×</button><p>Card payment form is not available in this browser.</p></div>`;
             }
       })
       .catch((error) => {

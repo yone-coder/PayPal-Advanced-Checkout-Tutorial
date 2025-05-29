@@ -10,18 +10,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
       :root {
-        --bg-primary: #0a0a0f;
-        --bg-secondary: #1a1a2e;
-        --bg-card: rgba(26, 26, 46, 0.7);
-        --text-primary: #ffffff;
-        --text-secondary: #a0a0b8;
-        --accent-primary: #6366f1;
-        --accent-secondary: #8b5cf6;
-        --success: #10b981;
-        --error: #ef4444;
-        --border: rgba(255, 255, 255, 0.1);
-        --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-        --glow: 0 0 40px rgba(99, 102, 241, 0.15);
+        --bg-primary: #0f0f14;
+        --bg-secondary: #1a1a21;
+        --bg-card: #ffffff;
+        --text-primary: #1a1a21;
+        --text-secondary: #6b7280;
+        --text-muted: #9ca3af;
+        --accent-primary: #5b5bd6;
+        --accent-hover: #4c4cc4;
+        --success: #059669;
+        --error: #dc2626;
+        --border: #e5e7eb;
+        --border-focus: #5b5bd6;
+        --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
       }
 
       * {
@@ -35,26 +37,13 @@
         background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
         min-height: 100vh;
         color: var(--text-primary);
-        line-height: 1.6;
-        overflow-x: hidden;
-      }
-
-      body::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: 
-          radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-          radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%);
-        pointer-events: none;
-        z-index: -1;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
 
       .container {
-        max-width: 500px;
+        max-width: 420px;
         margin: 0 auto;
         padding: 2rem 1rem;
         min-height: 100vh;
@@ -63,97 +52,50 @@
         justify-content: center;
       }
 
-      .card {
+      .checkout-card {
         background: var(--bg-card);
-        backdrop-filter: blur(20px);
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: var(--shadow-lg);
         border: 1px solid var(--border);
-        border-radius: 24px;
-        padding: 2.5rem;
-        box-shadow: var(--shadow);
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
       }
 
-      .card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-      }
-
-      .card:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--glow), var(--shadow);
-      }
-
-      .title {
-        font-size: 2rem;
-        font-weight: 700;
-        text-align: center;
-        margin-bottom: 0.5rem;
-        background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
-
-      .price {
+      /* Header Section */
+      .checkout-header {
         text-align: center;
         margin-bottom: 2rem;
       }
 
-      .price-tag {
-        display: inline-block;
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: var(--accent-primary);
-        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        padding: 0.75rem 1.5rem;
-        border: 1px solid var(--accent-primary);
-        border-radius: 50px;
-        position: relative;
-        overflow: hidden;
-      }
-
-      .price-tag::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.1), transparent);
-        transition: left 0.6s ease;
-      }
-
-      .price-tag:hover::before {
-        left: 100%;
-      }
-
-      .nft-image {
-        width: 100%;
-        max-width: 350px;
-        height: auto;
-        border-radius: 16px;
-        margin: 0 auto 2rem;
+      .product-image {
+        width: 80px;
+        height: 80px;
+        border-radius: 12px;
+        margin: 0 auto 1rem;
         display: block;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        transition: transform 0.3s ease;
+        box-shadow: var(--shadow);
+        object-fit: cover;
       }
 
-      .nft-image:hover {
-        transform: scale(1.02);
+      .product-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+      }
+
+      .product-price {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+
+      /* Form Styles */
+      .payment-form {
+        space-y: 1rem;
       }
 
       .form-group {
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
       }
 
       .form-label {
@@ -161,102 +103,109 @@
         font-size: 0.875rem;
         font-weight: 500;
         color: var(--text-primary);
-        margin-bottom: 0.5rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        margin-bottom: 0.375rem;
       }
 
-      .form-input, .div_input {
+      .form-input, .form-field {
         width: 100%;
-        padding: 1rem 1.25rem;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid var(--border);
-        border-radius: 12px;
+        padding: 0.75rem 0.875rem;
+        background: var(--bg-card);
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
         color: var(--text-primary);
         font-size: 1rem;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(10px);
+        font-family: inherit;
+        transition: all 0.15s ease;
+        appearance: none;
       }
 
-      .form-input:focus, .div_input:focus {
+      .form-input:focus, .form-field:focus {
         outline: none;
-        border-color: var(--accent-primary);
-        background: rgba(255, 255, 255, 0.08);
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        border-color: var(--border-focus);
+        box-shadow: 0 0 0 3px rgba(91, 91, 214, 0.1);
       }
 
       .form-input::placeholder {
-        color: var(--text-secondary);
+        color: var(--text-muted);
+        font-size: 1rem;
       }
 
-      .form-row {
+      /* Card Fields Styling */
+      .card-row {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
+        grid-template-columns: 2fr 1fr;
+        gap: 0.75rem;
       }
 
-      .purchase-btn {
+      .card-field {
+        padding: 0.75rem 0.875rem;
+        background: var(--bg-card);
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        transition: all 0.15s ease;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+      }
+
+      .card-field:focus-within {
+        border-color: var(--border-focus);
+        box-shadow: 0 0 0 3px rgba(91, 91, 214, 0.1);
+      }
+
+      /* PayPal hosted fields styling */
+      .card-field iframe {
+        border: none !important;
+        outline: none !important;
+        width: 100% !important;
+        height: 20px !important;
+      }
+
+      /* Payment Button */
+      .pay-button {
         width: 100%;
-        padding: 1.25rem;
-        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+        padding: 0.875rem 1rem;
+        background: var(--accent-primary);
         color: white;
         border: none;
-        border-radius: 12px;
-        font-size: 1.1rem;
+        border-radius: 8px;
+        font-size: 1rem;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.3s ease;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        position: relative;
-        overflow: hidden;
-        margin-top: 1rem;
+        transition: all 0.15s ease;
+        margin-top: 1.5rem;
+        font-family: inherit;
       }
 
-      .purchase-btn:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+      .pay-button:hover:not(:disabled) {
+        background: var(--accent-hover);
+        transform: translateY(-1px);
       }
 
-      .purchase-btn:disabled {
+      .pay-button:disabled {
         opacity: 0.6;
         cursor: not-allowed;
         transform: none;
       }
 
-      .purchase-btn::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-        transition: left 0.6s ease;
-      }
-
-      .purchase-btn:hover:not(:disabled)::before {
-        left: 100%;
-      }
-
+      /* Alerts */
       .alert {
-        padding: 1rem 1.25rem;
-        border-radius: 12px;
-        margin-bottom: 1.5rem;
+        padding: 0.875rem 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
         position: relative;
-        backdrop-filter: blur(10px);
-        animation: slideIn 0.3s ease;
+        font-size: 0.875rem;
       }
 
       .alert-success {
-        background: rgba(16, 185, 129, 0.1);
-        border: 1px solid rgba(16, 185, 129, 0.3);
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
         color: var(--success);
       }
 
       .alert-error {
-        background: rgba(239, 68, 68, 0.1);
-        border: 1px solid rgba(239, 68, 68, 0.3);
+        background: #fef2f2;
+        border: 1px solid #fecaca;
         color: var(--error);
       }
 
@@ -267,28 +216,33 @@
         background: none;
         border: none;
         color: inherit;
-        font-size: 1.25rem;
+        font-size: 1.125rem;
         cursor: pointer;
         opacity: 0.7;
-        transition: opacity 0.2s ease;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .alert-close:hover {
         opacity: 1;
       }
 
-      .spinner-container {
+      /* Loading State */
+      .loading-container {
         display: flex;
         justify-content: center;
         align-items: center;
-        padding: 4rem 0;
+        padding: 3rem 0;
       }
 
       .spinner {
-        width: 50px;
-        height: 50px;
-        border: 3px solid rgba(99, 102, 241, 0.1);
-        border-top: 3px solid var(--accent-primary);
+        width: 32px;
+        height: 32px;
+        border: 2px solid var(--border);
+        border-top: 2px solid var(--accent-primary);
         border-radius: 50%;
         animation: spin 1s linear infinite;
       }
@@ -297,18 +251,27 @@
         display: none !important;
       }
 
-      .divider {
-        height: 1px;
-        background: linear-gradient(90deg, transparent, var(--border), transparent);
-        margin: 2rem 0;
+      /* Security Badge */
+      .security-info {
+        text-align: center;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
       }
 
-      .footer {
-        text-align: center;
+      .security-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.75rem;
         color: var(--text-secondary);
-        font-size: 0.875rem;
-        margin-top: 2rem;
-        opacity: 0.7;
+        font-weight: 500;
+      }
+
+      .security-icon {
+        width: 16px;
+        height: 16px;
+        color: var(--success);
       }
 
       @keyframes spin {
@@ -317,31 +280,16 @@
         }
       }
 
-      @keyframes slideIn {
-        from {
-          opacity: 0;
-          transform: translateY(-10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      @media (max-width: 640px) {
+      @media (max-width: 480px) {
         .container {
           padding: 1rem;
         }
         
-        .card {
-          padding: 2rem 1.5rem;
+        .checkout-card {
+          padding: 1.5rem;
         }
         
-        .title {
-          font-size: 1.75rem;
-        }
-        
-        .form-row {
+        .card-row {
           grid-template-columns: 1fr;
         }
       }
@@ -349,53 +297,54 @@
   </head>
   <body>
     <div class="container">
-      <div class="card">
-        <h1 class="title">AI-Generated NFT Bored Ape</h1>
-        
-        <div class="price">
-          <div class="price-tag">$100.00 USD</div>
+      <div class="checkout-card">
+        <!-- Header -->
+        <div class="checkout-header">
+          <img src="https://cdn.discordapp.com/attachments/1060825015681028127/1076385063903694908/rauljr7_3d_e83fed6a-69aa-4a6a-b0ec-928edd57aecf.png" alt="Bored Ape NFT" class="product-image">
+          <div class="product-title">AI-Generated NFT Bored Ape</div>
+          <div class="product-price">$100.00</div>
         </div>
         
+        <!-- Alerts -->
         <div id="alerts"></div>
         
-        <div id="loading" class="spinner-container">
+        <!-- Loading State -->
+        <div id="loading" class="loading-container">
           <div class="spinner"></div>
         </div>
         
+        <!-- Payment Form -->
         <div id="content" class="hide">
-          <img src="https://cdn.discordapp.com/attachments/1060825015681028127/1076385063903694908/rauljr7_3d_e83fed6a-69aa-4a6a-b0ec-928edd57aecf.png" alt="Bored Ape NFT" class="nft-image">
-          
-          <form id="card-form">
+          <form id="card-form" class="payment-form">
+            <!-- Email -->
             <div class="form-group">
-              <label for="card-number" class="form-label">Card Number</label>
-              <div class="div_input" id="card-number"></div>
+              <label for="email" class="form-label">Email</label>
+              <input type="email" id="email" class="form-input" placeholder="Enter your email" required>
             </div>
             
-            <div class="form-row">
-              <div class="form-group">
-                <label for="expiration-date" class="form-label">Expiry Date</label>
-                <div id="expiration-date" class="div_input"></div>
-              </div>
-              <div class="form-group">
-                <label for="cvv" class="form-label">CVV</label>
-                <div id="cvv" class="div_input"></div>
+            <!-- Card Information -->
+            <div class="form-group">
+              <label class="form-label">Card information</label>
+              <div class="card-field" id="card-number"></div>
+              <div class="card-row" style="margin-top: 0.5rem;">
+                <div class="card-field" id="expiration-date"></div>
+                <div class="card-field" id="cvv"></div>
               </div>
             </div>
             
-            <div class="form-group">
-              <label for="email" class="form-label">Email Address</label>
-              <input type="email" id="email" class="form-input" placeholder="your@email.com" required>
-            </div>
-            
-            <button type="submit" class="purchase-btn">Purchase NFT</button>
+            <button type="submit" class="pay-button">Pay $100.00</button>
           </form>
           
-          <div class="divider"></div>
+          <!-- Security Info -->
+          <div class="security-info">
+            <div class="security-badge">
+              <svg class="security-icon" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+              </svg>
+              Secured by PayPal
+            </div>
+          </div>
         </div>
-      </div>
-      
-      <div class="footer">
-        Secure payment powered by PayPal
       </div>
     </div>
 
@@ -420,13 +369,14 @@
       }
 
       let reset_purchase_button = () => {
-          document.querySelector("#card-form").querySelector("button[type='submit']").removeAttribute("disabled");
-          document.querySelector("#card-form").querySelector("button[type='submit']").textContent = "Purchase NFT";
+          const btn = document.querySelector("#card-form").querySelector("button[type='submit']");
+          btn.removeAttribute("disabled");
+          btn.textContent = "Pay $100.00";
       }
 
       const is_user_logged_in = () => {
         return new Promise((resolve) => {
-          customer_id = localStorage.getItem("logged_in_user_id") || "";
+          current_customer_id = "";
           resolve();
         });
       }
@@ -466,7 +416,7 @@
       const intent = "capture";
 
       let display_error_alert = () => {
-          document.getElementById("alerts").innerHTML = `<div class="alert alert-error"><button class="alert-close">×</button><p>An error occurred! Please try again.</p></div>`;
+          document.getElementById("alerts").innerHTML = `<div class="alert alert-error"><button class="alert-close">×</button>An error occurred. Please try again.</div>`;
       }
 
       let display_success_message = (order_details) => {
@@ -477,7 +427,7 @@
           const amount = order_details.purchase_units[0].payments[intent_object][0].amount.value;
           const currency = order_details.purchase_units[0].payments[intent_object][0].amount.currency_code;
           
-          document.getElementById("alerts").innerHTML = `<div class='alert alert-success'>Thank you ${firstName} ${lastName} for your payment of ${amount} ${currency}! Your NFT will be delivered shortly.</div>`;
+          document.getElementById("alerts").innerHTML = `<div class='alert alert-success'>Payment successful! Thank you ${firstName} ${lastName}. Your NFT will be delivered to your email shortly.</div>`;
 
           //Hide the card form after successful payment
           document.getElementById("card-form").classList.add("hide");
@@ -510,30 +460,34 @@
                   .then((order) => { order_id = order.id; return order.id; });
                 },
                 styles: {
-                  '.valid': {
-                    color: '#10b981'
-                  },
-                  '.invalid': {
-                    color: '#ef4444'
-                  },
                   'input': {
                       'font-size': '16px',
-                      'color': '#ffffff',
-                      'font-family': 'Inter, sans-serif'
+                      'color': '#1a1a21',
+                      'font-family': 'Inter, sans-serif',
+                      'font-weight': '400'
                   },
+                  ':focus': {
+                      'color': '#1a1a21'
+                  },
+                  '.valid': {
+                      'color': '#1a1a21'
+                  },
+                  '.invalid': {
+                      'color': '#dc2626'
+                  }
                 },
                 fields: {
                   number: {
                     selector: "#card-number",
-                    placeholder: "1234 5678 9012 3456"
+                    placeholder: "1234 1234 1234 1234"
                   },
                   cvv: {
                     selector: "#cvv",
-                    placeholder: "123"
+                    placeholder: "CVC"
                   },
                   expirationDate: {
                     selector: "#expiration-date",
-                    placeholder: "MM/YY"
+                    placeholder: "MM / YY"
                   }
                 }
               }).then((card_fields) => {
@@ -584,7 +538,7 @@
                 });
               });
             } else {
-              document.getElementById("alerts").innerHTML = `<div class="alert alert-error"><button class="alert-close">×</button><p>Card payment form is not available in this browser.</p></div>`;
+              document.getElementById("alerts").innerHTML = `<div class="alert alert-error"><button class="alert-close">×</button>Card payments are not supported in this browser.</div>`;
             }
       })
       .catch((error) => {

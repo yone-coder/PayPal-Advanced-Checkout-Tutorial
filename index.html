@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta http-equiv="x-ua-compatible" content="ie=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>PPCP Advanced</title>
+    <title>PPCP Advanced - Debug</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -58,6 +58,23 @@
         padding: 2rem;
         box-shadow: var(--shadow-lg);
         border: 1px solid var(--border);
+      }
+
+      /* Debug info */
+      .debug-info {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.875rem;
+        font-family: monospace;
+      }
+
+      .debug-info h3 {
+        margin-bottom: 0.5rem;
+        font-family: 'Inter', sans-serif;
+        font-size: 1rem;
       }
 
       /* Header Section */
@@ -151,6 +168,7 @@
         display: flex;
         align-items: center;
         width: 100%;
+        position: relative;
       }
 
       .card-field:focus-within {
@@ -158,12 +176,19 @@
         box-shadow: 0 0 0 3px rgba(91, 91, 214, 0.1);
       }
 
-      /* PayPal hosted fields styling */
+      /* Enhanced iframe styling for better card logo display */
       .card-field iframe {
         border: none !important;
         outline: none !important;
         width: 100% !important;
-        height: 20px !important;
+        height: 24px !important;
+        background: transparent !important;
+      }
+
+      /* Ensure card number field has enough space for logos */
+      #card-number {
+        min-height: 52px;
+        padding-right: 50px; /* Space for card logo */
       }
 
       /* Payment Button */
@@ -212,6 +237,12 @@
         background: #fef2f2;
         border: 1px solid #fecaca;
         color: var(--error);
+      }
+
+      .alert-info {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1d4ed8;
       }
 
       .alert-close {
@@ -294,7 +325,6 @@
           padding: 1.5rem;
         }
         
-        /* Removed the flex-direction: column rule that was causing vertical stacking */
         .card-row {
           gap: 0.5rem;
         }
@@ -304,6 +334,17 @@
   <body>
     <div class="container">
       <div class="checkout-card">
+        <!-- Debug Information -->
+        <div class="debug-info">
+          <h3>Debug Info</h3>
+          <div id="debug-log">
+            SDK Loading...<br>
+            PayPal version: <span id="paypal-version">Loading...</span><br>
+            Hosted Fields eligible: <span id="hf-eligible">Checking...</span><br>
+            Card logos enabled: <span id="card-logos">Checking...</span>
+          </div>
+        </div>
+
         <!-- Header -->
         <div class="checkout-header">
           <img src="https://cdn.discordapp.com/attachments/1060825015681028127/1076385063903694908/rauljr7_3d_e83fed6a-69aa-4a6a-b0ec-928edd57aecf.png" alt="Bored Ape NFT" class="product-image">
@@ -358,6 +399,12 @@
       // Helper / Utility functions
       let current_customer_id;
       let order_id;
+      let debugLog = document.getElementById('debug-log');
+
+      function addDebugLog(message) {
+        debugLog.innerHTML += '<br>' + message;
+        console.log('[DEBUG]', message);
+      }
 
       // Replace this URL with your actual Render.com backend URL
       const API_BASE_URL = "https://paypal-with-nodejs.onrender.com";
@@ -390,6 +437,7 @@
       const get_client_token = () => {
         return new Promise(async (resolve, reject) => {
           try {
+            addDebugLog('Requesting client token...');
             const response = await fetch(`${API_BASE_URL}/get_client_token`, {
               method: "POST", 
               headers: { "Content-Type": "application/json" },
@@ -397,8 +445,10 @@
             });
 
             const client_token = await response.text();
+            addDebugLog('Client token received: ' + (client_token ? 'Yes' : 'No'));
             resolve(client_token);
           } catch (error) {
+            addDebugLog('Client token error: ' + error.message);
             reject(error);
           }
         });
@@ -439,38 +489,76 @@
           document.getElementById("card-form").classList.add("hide");
       }
 
+      // Show info about trying different test card numbers
+      function showCardTestInfo() {
+        document.getElementById("alerts").innerHTML = `
+          <div class="alert alert-info">
+            <button class="alert-close">×</button>
+            <strong>Test Card Numbers (for logo testing):</strong><br>
+            Visa: 4111111111111111<br>
+            Mastercard: 5555555555554444<br>
+            Amex: 378282246310005<br>
+            Try typing these to see if card logos appear!
+          </div>
+        `;
+      }
+
       //PayPal Code - Forms Only
       is_user_logged_in()
       .then(() => {
           return get_client_token();
       })
       .then((client_token) => {
-          return script_to_head({"src": paypal_sdk_url + "?client-id=" + client_id + "&enable-funding=venmo&currency=" + currency + "&intent=" + intent + "&components=hosted-fields", "data-client-token": client_token})
+          addDebugLog('Loading PayPal SDK...');
+          // Enhanced SDK URL with additional parameters for better card logo support
+          const sdkUrl = paypal_sdk_url + "?client-id=" + client_id + 
+                        "&enable-funding=venmo&currency=" + currency + 
+                        "&intent=" + intent + "&components=hosted-fields" +
+                        "&disable-funding=card,credit"; // This might help with logo display
+          
+          return script_to_head({"src": sdkUrl, "data-client-token": client_token})
       })
       .then(() => {
           //Handle loading spinner
           document.getElementById("loading").classList.add("hide");
           document.getElementById("content").classList.remove("hide");
-
+          
+          // Debug info
+          addDebugLog('PayPal SDK loaded successfully');
+          document.getElementById('paypal-version').textContent = window.paypal ? window.paypal.version || 'Available' : 'Not available';
+          
           //Hosted Fields Only
           if (paypal.HostedFields.isEligible()) {
-              // Renders card fields
+              addDebugLog('Hosted Fields is eligible');
+              document.getElementById('hf-eligible').textContent = 'Yes';
+              document.getElementById('card-logos').textContent = 'Should be automatic';
+              
+              showCardTestInfo();
+              
+              // Enhanced Renders card fields with better logo support
               paypal_hosted_fields = paypal.HostedFields.render({
                 createOrder: () => {
+                  addDebugLog('Creating order...');
                   return fetch(`${API_BASE_URL}/create_order`, {
                       method: "post", 
                       headers: { "Content-Type": "application/json; charset=utf-8" },
                       body: JSON.stringify({ "intent": intent })
                   })
                   .then((response) => response.json())
-                  .then((order) => { order_id = order.id; return order.id; });
+                  .then((order) => { 
+                    order_id = order.id; 
+                    addDebugLog('Order created: ' + order.id);
+                    return order.id; 
+                  });
                 },
                 styles: {
                   'input': {
                       'font-size': '16px',
                       'color': '#1a1a21',
                       'font-family': 'Inter, sans-serif',
-                      'font-weight': '400'
+                      'font-weight': '400',
+                      'padding': '12px 16px',
+                      'line-height': '1.5'
                   },
                   ':focus': {
                       'color': '#1a1a21'
@@ -497,8 +585,24 @@
                   }
                 }
               }).then((card_fields) => {
+                addDebugLog('Hosted Fields rendered successfully');
+                
+                // Add event listeners for debugging
+                card_fields.on('cardTypeChange', (event) => {
+                  addDebugLog('Card type detected: ' + (event.cards[0]?.type || 'Unknown'));
+                });
+                
+                card_fields.on('validityChange', (event) => {
+                  addDebugLog('Field validity changed: ' + JSON.stringify(event.fields));
+                });
+                
+                card_fields.on('inputSubmitRequest', () => {
+                  addDebugLog('Input submit requested');
+                });
+
                document.querySelector("#card-form").addEventListener("submit", (event) => {
                   event.preventDefault();
+                  addDebugLog('Form submitted');
                   const submitBtn = document.querySelector("#card-form").querySelector("button[type='submit']");
                   submitBtn.setAttribute("disabled", "");
                   submitBtn.textContent = "Processing...";
@@ -517,6 +621,7 @@
                       }
                     )
                     .then(() => {
+                      addDebugLog('Card fields submitted, completing order...');
                       return fetch(`${API_BASE_URL}/complete_order`, {
                           method: "post", 
                           headers: { "Content-Type": "application/json; charset=utf-8" },
@@ -528,26 +633,32 @@
                       })
                       .then((response) => response.json())
                       .then((order_details) => {
+                          addDebugLog('Order completed successfully');
                           display_success_message(order_details);
                        })
                        .catch((error) => {
                           console.log(error);
+                          addDebugLog('Order completion error: ' + error.message);
                           display_error_alert();
                           reset_purchase_button();
                        });
                     })
                     .catch((err) => {
                       console.log(err);
+                      addDebugLog('Card submission error: ' + err.message);
                       reset_purchase_button();
                       display_error_alert();
                     });
                 });
               });
             } else {
+              addDebugLog('Hosted Fields NOT eligible');
+              document.getElementById('hf-eligible').textContent = 'No';
               document.getElementById("alerts").innerHTML = `<div class="alert alert-error"><button class="alert-close">×</button>Card payments are not supported in this browser.</div>`;
             }
       })
       .catch((error) => {
+          addDebugLog('Setup error: ' + error.message);
           reset_purchase_button();
           display_error_alert();
       });

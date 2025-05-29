@@ -1,200 +1,406 @@
-// Helper / Utility functions
-let current_customer_id;
-let order_id;
+/**
+ * PayPal Integration Manager
+ * Sophisticated payment processing with hosted fields integration
+ */
 
-// Replace this URL with your actual Render.com backend URL
-const API_BASE_URL = "https://paypal-with-nodejs.onrender.com";
+class PayPalIntegrationManager {
+  constructor() {
+    this.config = {
+      apiBaseUrl: "https://paypal-with-nodejs.onrender.com",
+      paypalSdkUrl: "https://www.paypal.com/sdk/js",
+      clientId: "AU23YbLMTqxG3iSvnhcWtix6rGN14uw3axYJgrDe8VqUVng8XiQmmeiaxJWbnpbZP_f4--RTg146F1Mj",
+      currency: "USD",
+      intent: "capture"
+    };
 
-let script_to_head = (attributes_object) => {
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      for (const name of Object.keys(attributes_object)) {
-        script.setAttribute(name, attributes_object[name]);
-      }
-      document.head.appendChild(script);
-      script.addEventListener('load', resolve);
-      script.addEventListener('error', reject);
-    });
-}
+    this.state = {
+      currentCustomerId: null,
+      orderId: null,
+      hostedFields: null,
+      isProcessing: false
+    };
 
-let reset_purchase_button = () => {
-    document.querySelector("#card-form").querySelector("input[type='submit']").removeAttribute("disabled");
-    document.querySelector("#card-form").querySelector("input[type='submit']").value = "Purchase";
-}
+    this.elements = {
+      loading: document.getElementById("loading"),
+      content: document.getElementById("content"),
+      alerts: document.getElementById("alerts"),
+      cardForm: document.getElementById("card-form"),
+      submitButton: null // Will be set after form is found
+    };
 
-const is_user_logged_in = () => {
-  return new Promise((resolve) => {
-    customer_id = localStorage.getItem("logged_in_user_id") || "";
-    resolve();
-  });
-}
+    this.init();
+  }
 
-const get_client_token = () => {
-  return new Promise(async (resolve, reject) => {
+  /**
+   * Initialize the PayPal integration
+   */
+  async init() {
     try {
-      const response = await fetch(`${API_BASE_URL}/get_client_token`, {
-        method: "POST", 
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ "customer_id": current_customer_id }),
+      await this.setupEventListeners();
+      await this.authenticateUser();
+      const clientToken = await this.getClientToken();
+      await this.loadPayPalSDK(clientToken);
+      await this.setupHostedFields();
+      this.showContent();
+    } catch (error) {
+      console.error('PayPal Integration initialization failed:', error);
+      this.displayErrorAlert('Failed to initialize payment system');
+    }
+  }
+
+  /**
+   * Set up global event listeners
+   */
+  setupEventListeners() {
+    return new Promise((resolve) => {
+      document.addEventListener("click", this.handleGlobalClick.bind(this));
+      resolve();
+    });
+  }
+
+  /**
+   * Handle global click events (alert close buttons)
+   */
+  handleGlobalClick(event) {
+    if (event.target.classList.contains("ms-close")) {
+      this.closeAlert(event);
+    }
+  }
+
+  /**
+   * Close alert dialog
+   */
+  closeAlert(event) {
+    const alert = event.target.closest(".ms-alert");
+    if (alert) {
+      alert.remove();
+    }
+  }
+
+  /**
+   * Check if user is logged in
+   */
+  authenticateUser() {
+    return new Promise((resolve) => {
+      this.state.currentCustomerId = localStorage.getItem("logged_in_user_id") || "";
+      resolve();
+    });
+  }
+
+  /**
+   * Get client token from server
+   */
+  async getClientToken() {
+    try {
+      const response = await fetch(`${this.config.apiBaseUrl}/get_client_token`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "text/plain"
+        },
+        body: JSON.stringify({ 
+          customer_id: this.state.currentCustomerId 
+        }),
       });
 
-      const client_token = await response.text();
-      resolve(client_token);
-    } catch (error) {
-      reject(error);
-    }
-  });
-}
-
-let handle_close = (event) => {
-    event.target.closest(".ms-alert").remove();
-}
-
-let handle_click = (event) => {
-    if (event.target.classList.contains("ms-close")) {
-        handle_close(event);
-    }
-}
-
-document.addEventListener("click", handle_click);
-
-const paypal_sdk_url = "https://www.paypal.com/sdk/js";
-const client_id = "AU23YbLMTqxG3iSvnhcWtix6rGN14uw3axYJgrDe8VqUVng8XiQmmeiaxJWbnpbZP_f4--RTg146F1Mj";
-const currency = "USD";
-const intent = "capture";
-
-let display_error_alert = () => {
-    document.getElementById("alerts").innerHTML = `<div class="ms-alert ms-action2 ms-small"><span class="ms-close"></span><p>An Error Ocurred! (View console for more info)</p>  </div>`;
-}
-
-let display_success_message = (order_details) => {
-    console.log(order_details); //https://developer.paypal.com/docs/api/orders/v2/#orders_capture!c=201&path=create_time&t=response
-    let intent_object = intent === "authorize" ? "authorizations" : "captures";
-    //Custom Successful Message
-    document.getElementById("alerts").innerHTML = `<div class='ms-alert ms-action'>Thank you ` + (order_details?.payer?.name?.given_name || ``) + ` ` + (order_details?.payer?.name?.surname || ``) + ` for your payment of ` + order_details.purchase_units[0].payments[intent_object][0].amount.value + ` ` + order_details.purchase_units[0].payments[intent_object][0].amount.currency_code + `!</div>`;
-
-    //Hide the card form after successful payment
-    document.getElementById("card-form").classList.add("hide");
-}
-
-//PayPal Code - Forms Only
-is_user_logged_in()
-.then(() => {
-    return get_client_token();
-})
-.then((client_token) => {
-    //https://developer.paypal.com/sdk/js/configuration/#link-queryparameters
-    return script_to_head({"src": paypal_sdk_url + "?client-id=" + client_id + "&enable-funding=venmo&currency=" + currency + "&intent=" + intent + "&components=hosted-fields", "data-client-token": client_token}) //https://developer.paypal.com/sdk/js/configuration/#link-configureandcustomizeyourintegration
-})
-.then(() => {
-    //Handle loading spinner
-    document.getElementById("loading").classList.add("hide");
-    document.getElementById("content").classList.remove("hide");
-
-    //Hosted Fields Only
-    if (paypal.HostedFields.isEligible()) {
-        // Renders card fields
-        paypal_hosted_fields = paypal.HostedFields.render({
-          // Call your server to set up the transaction
-          createOrder: () => {
-            return fetch(`${API_BASE_URL}/create_order`, {
-                method: "post", 
-                headers: { "Content-Type": "application/json; charset=utf-8" },
-                body: JSON.stringify({ "intent": intent })
-            })
-            .then((response) => response.json())
-            .then((order) => { order_id = order.id; return order.id; });
-          },
-          styles: {
-            '.valid': {
-              color: 'green'
-            },
-            '.invalid': {
-              color: 'red'
-            },
-            'input': {
-                'font-size': '16pt',
-                'color': '#ffffff'
-            },
-          },
-          fields: {
-            number: {
-              selector: "#card-number",
-              placeholder: "4111 1111 1111 1111"
-            },
-            cvv: {
-              selector: "#cvv",
-              placeholder: "123"
-            },
-            expirationDate: {
-              selector: "#expiration-date",
-              placeholder: "MM/YY"
-            }
-          }
-        }).then((card_fields) => {
-         document.querySelector("#card-form").addEventListener("submit", (event) => {
-            event.preventDefault();
-            document.querySelector("#card-form").querySelector("input[type='submit']").setAttribute("disabled", "");
-            document.querySelector("#card-form").querySelector("input[type='submit']").value = "Loading...";
-            card_fields
-              .submit(
-                //Customer Data BEGIN
-                //This wasn't part of the video guide originally, but I've included it here
-                //So you can reference how you could send customer data, which may
-                //be a requirement of your project to pass this info to card issuers
-                {
-                  // Cardholder's first and last name
-                  cardholderName: "Raúl Uriarte, Jr.",
-                  // Billing Address
-                  billingAddress: {
-                    // Street address, line 1
-                    streetAddress: "123 Springfield Rd",
-                    // Street address, line 2 (Ex: Unit, Apartment, etc.)
-                    extendedAddress: "",
-                    // State
-                    region: "AZ",
-                    // City
-                    locality: "CHANDLER",
-                    // Postal Code
-                    postalCode: "85224",
-                    // Country Code
-                    countryCodeAlpha2: "US",
-                  },
-                }
-                //Customer Data END
-              )
-              .then(() => {
-                return fetch(`${API_BASE_URL}/complete_order`, {
-                    method: "post", 
-                    headers: { "Content-Type": "application/json; charset=utf-8" },
-                    body: JSON.stringify({
-                        "intent": intent,
-                        "order_id": order_id,
-                        "email": document.getElementById("email").value
-                    })
-                })
-                .then((response) => response.json())
-                .then((order_details) => {
-                    display_success_message(order_details);
-                 })
-                 .catch((error) => {
-                    console.log(error);
-                    display_error_alert();
-                 });
-              })
-              .catch((err) => {
-                console.log(err);
-                reset_purchase_button();
-                display_error_alert();
-              });
-          });
-        });
-      } else {
-        // Show message if hosted fields are not available
-        document.getElementById("alerts").innerHTML = `<div class="ms-alert ms-action2 ms-small"><span class="ms-close"></span><p>Card payment form is not available in this browser.</p></div>`;
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-})
-.catch((error) => {
-    reset_purchase_button();
-    display_error_alert();
+
+      return await response.text();
+    } catch (error) {
+      console.error('Failed to get client token:', error);
+      throw new Error('Unable to authenticate with payment provider');
+    }
+  }
+
+  /**
+   * Dynamically load PayPal SDK script
+   */
+  loadPayPalSDK(clientToken) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      
+      const sdkParams = new URLSearchParams({
+        'client-id': this.config.clientId,
+        'enable-funding': 'venmo',
+        'currency': this.config.currency,
+        'intent': this.config.intent,
+        'components': 'hosted-fields'
+      });
+
+      script.src = `${this.config.paypalSdkUrl}?${sdkParams.toString()}`;
+      script.setAttribute('data-client-token', clientToken);
+      
+      script.addEventListener('load', resolve);
+      script.addEventListener('error', () => {
+        reject(new Error('Failed to load PayPal SDK'));
+      });
+      
+      document.head.appendChild(script);
+    });
+  }
+
+  /**
+   * Setup PayPal hosted fields
+   */
+  async setupHostedFields() {
+    if (!paypal?.HostedFields?.isEligible()) {
+      throw new Error('Hosted fields not available in this browser');
+    }
+
+    try {
+      this.state.hostedFields = await paypal.HostedFields.render({
+        createOrder: this.createOrder.bind(this),
+        styles: this.getFieldStyles(),
+        fields: this.getFieldConfiguration()
+      });
+
+      this.setupFormSubmission();
+    } catch (error) {
+      console.error('Failed to setup hosted fields:', error);
+      throw new Error('Payment form initialization failed');
+    }
+  }
+
+  /**
+   * Get styling configuration for hosted fields
+   */
+  getFieldStyles() {
+    return {
+      '.valid': { color: 'green' },
+      '.invalid': { color: 'red' },
+      'input': {
+        'font-size': '16pt',
+        'color': '#ffffff'
+      }
+    };
+  }
+
+  /**
+   * Get field configuration for hosted fields
+   */
+  getFieldConfiguration() {
+    return {
+      number: {
+        selector: "#card-number",
+        placeholder: "4111 1111 1111 1111"
+      },
+      cvv: {
+        selector: "#cvv",
+        placeholder: "123"
+      },
+      expirationDate: {
+        selector: "#expiration-date",
+        placeholder: "MM/YY"
+      }
+    };
+  }
+
+  /**
+   * Create order on server
+   */
+  async createOrder() {
+    try {
+      const response = await fetch(`${this.config.apiBaseUrl}/create_order`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json; charset=utf-8" 
+        },
+        body: JSON.stringify({ 
+          intent: this.config.intent 
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to create order: ${response.status}`);
+      }
+
+      const order = await response.json();
+      this.state.orderId = order.id;
+      return order.id;
+    } catch (error) {
+      console.error('Order creation failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Setup form submission handling
+   */
+  setupFormSubmission() {
+    if (!this.elements.cardForm) {
+      throw new Error('Card form not found');
+    }
+
+    this.elements.submitButton = this.elements.cardForm.querySelector("input[type='submit']");
+    
+    this.elements.cardForm.addEventListener("submit", this.handleFormSubmit.bind(this));
+  }
+
+  /**
+   * Handle form submission
+   */
+  async handleFormSubmit(event) {
+    event.preventDefault();
+    
+    if (this.state.isProcessing) {
+      return;
+    }
+
+    try {
+      this.setProcessingState(true);
+      await this.processPayment();
+    } catch (error) {
+      console.error('Payment processing failed:', error);
+      this.displayErrorAlert('Payment processing failed. Please try again.');
+    } finally {
+      this.setProcessingState(false);
+    }
+  }
+
+  /**
+   * Process the payment
+   */
+  async processPayment() {
+    const customerData = this.getCustomerData();
+    
+    await this.state.hostedFields.submit(customerData);
+    
+    const orderDetails = await this.completeOrder();
+    this.displaySuccessMessage(orderDetails);
+  }
+
+  /**
+   * Get customer data for payment processing
+   */
+  getCustomerData() {
+    return {
+      cardholderName: "Raúl Uriarte, Jr.",
+      billingAddress: {
+        streetAddress: "123 Springfield Rd",
+        extendedAddress: "",
+        region: "AZ",
+        locality: "CHANDLER",
+        postalCode: "85224",
+        countryCodeAlpha2: "US",
+      },
+    };
+  }
+
+  /**
+   * Complete the order on server
+   */
+  async completeOrder() {
+    const emailElement = document.getElementById("email");
+    
+    const response = await fetch(`${this.config.apiBaseUrl}/complete_order`, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json; charset=utf-8" 
+      },
+      body: JSON.stringify({
+        intent: this.config.intent,
+        order_id: this.state.orderId,
+        email: emailElement?.value || ""
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to complete order: ${response.status}`);
+    }
+
+    return await response.json();
+  }
+
+  /**
+   * Set processing state and update UI
+   */
+  setProcessingState(isProcessing) {
+    this.state.isProcessing = isProcessing;
+    
+    if (this.elements.submitButton) {
+      if (isProcessing) {
+        this.elements.submitButton.setAttribute("disabled", "");
+        this.elements.submitButton.value = "Processing...";
+      } else {
+        this.elements.submitButton.removeAttribute("disabled");
+        this.elements.submitButton.value = "Purchase";
+      }
+    }
+  }
+
+  /**
+   * Display success message
+   */
+  displaySuccessMessage(orderDetails) {
+    console.log('Order completed successfully:', orderDetails);
+    
+    const intentObject = this.config.intent === "authorize" ? "authorizations" : "captures";
+    const payment = orderDetails.purchase_units[0].payments[intentObject][0];
+    const payer = orderDetails.payer;
+    
+    const firstName = payer?.name?.given_name || '';
+    const lastName = payer?.name?.surname || '';
+    const amount = payment.amount.value;
+    const currency = payment.amount.currency_code;
+    
+    const message = `Thank you ${firstName} ${lastName} for your payment of ${amount} ${currency}!`;
+    
+    this.elements.alerts.innerHTML = `
+      <div class='ms-alert ms-action'>
+        ${message}
+      </div>
+    `;
+
+    // Hide the card form after successful payment
+    this.elements.cardForm.classList.add("hide");
+  }
+
+  /**
+   * Display error alert
+   */
+  displayErrorAlert(message = "An error occurred! (View console for more info)") {
+    this.elements.alerts.innerHTML = `
+      <div class="ms-alert ms-action2 ms-small">
+        <span class="ms-close"></span>
+        <p>${message}</p>
+      </div>
+    `;
+  }
+
+  /**
+   * Show main content and hide loading spinner
+   */
+  showContent() {
+    if (this.elements.loading) {
+      this.elements.loading.classList.add("hide");
+    }
+    if (this.elements.content) {
+      this.elements.content.classList.remove("hide");
+    }
+  }
+}
+
+/**
+ * Initialize PayPal integration when DOM is ready
+ */
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    new PayPalIntegrationManager();
+  } catch (error) {
+    console.error('Failed to initialize PayPal integration:', error);
+  }
 });
+
+// Fallback initialization if DOM is already loaded
+if (document.readyState === 'loading') {
+  // DOM is still loading, event listener will handle initialization
+} else {
+  // DOM is already loaded
+  try {
+    new PayPalIntegrationManager();
+  } catch (error) {
+    console.error('Failed to initialize PayPal integration:', error);
+  }
+}

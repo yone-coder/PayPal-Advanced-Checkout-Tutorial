@@ -130,11 +130,27 @@
         font-size: 1rem;
       }
 
-      /* Card Fields Styling */
+      /* Card Fields Container */
+      .card-fields-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      /* Card Number Field */
+      .card-number-field {
+        width: 100%;
+      }
+
+      /* Card Row for Date and CVV */
       .card-row {
-        display: grid;
-        grid-template-columns: 2fr 1fr;
+        display: flex;
         gap: 0.75rem;
+        align-items: stretch;
+      }
+
+      .card-row > * {
+        flex: 1;
       }
 
       .card-field {
@@ -146,6 +162,7 @@
         min-height: 48px;
         display: flex;
         align-items: center;
+        width: 100%;
       }
 
       .card-field:focus-within {
@@ -290,7 +307,8 @@
         }
         
         .card-row {
-          grid-template-columns: 1fr;
+          flex-direction: column;
+          gap: 0.5rem;
         }
       }
     </style>
@@ -325,10 +343,14 @@
             <!-- Card Information -->
             <div class="form-group">
               <label class="form-label">Card information</label>
-              <div class="card-field" id="card-number"></div>
-              <div class="card-row" style="margin-top: 0.5rem;">
-                <div class="card-field" id="expiration-date"></div>
-                <div class="card-field" id="cvv"></div>
+              <div class="card-fields-container">
+                <div class="card-number-field">
+                  <div class="card-field" id="card-number"></div>
+                </div>
+                <div class="card-row">
+                  <div class="card-field" id="expiration-date"></div>
+                  <div class="card-field" id="cvv"></div>
+                </div>
               </div>
             </div>
             

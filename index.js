@@ -8,17 +8,17 @@ const app = express();
 app.use((req, res, next) => {
     // Allow requests from any origin (you can restrict this to specific domains)
     res.header('Access-Control-Allow-Origin', '*');
-    
+
     // If you want to restrict to specific domains, use this instead:
     // const allowedOrigins = ['https://yourdomain.com', 'https://anotherdomain.com'];
     // const origin = req.headers.origin;
     // if (allowedOrigins.includes(origin)) {
     //     res.header('Access-Control-Allow-Origin', origin);
     // }
-    
+
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    
+
     // Handle preflight requests
     if (req.method === 'OPTIONS') {
         res.sendStatus(200);
@@ -38,40 +38,151 @@ const client_id = process.env.CLIENT_ID;
 const client_secret = process.env.CLIENT_SECRET;
 const endpoint_url = environment === 'sandbox' ? 'https://api-m.sandbox.paypal.com' : 'https://api-m.paypal.com';
 
+// Price configuration - This could eventually be moved to a database
+// Think of this as your "price catalog" that defines what you're selling
+const PRICING_CONFIG = {
+    nft: {
+        value: '5500.00',      // The raw numeric value PayPal needs
+        currency: 'USD',        // Currency code
+        display: '$5,500.00',   // Human-readable format for your frontend
+        description: 'Premium NFT Collection'
+    }
+    // You could add more products here:
+    // premium_nft: { value: '10000.00', currency: 'USD', display: '$10,000.00' }
+};
+
 /**
- * Creates an order and returns it as a JSON response.
+ * NEW ENDPOINT: Get current pricing information
+ * This allows your frontend to fetch the current price dynamically
+ * Instead of hardcoding prices in your frontend, you fetch them fresh each time
+ */
+app.get('/get_price/:product?', (req, res) => {
+    try {
+        // Default to 'nft' if no specific product is requested
+        const productType = req.params.product || 'nft';
+        
+        // Look up the product in our pricing configuration
+        const pricing = PRICING_CONFIG[productType];
+        
+        if (!pricing) {
+            // If someone requests a product that doesn't exist, return an error
+            return res.status(404).json({
+                error: 'Product not found',
+                available_products: Object.keys(PRICING_CONFIG)
+            });
+        }
+        
+        // Return the pricing information
+        // This gives your frontend everything it needs to display the price
+        res.json({
+            product: productType,
+            price: pricing.value,
+            currency: pricing.currency,
+            display: pricing.display,
+            description: pricing.description,
+            // You might also want to include tax information, discounts, etc.
+            timestamp: new Date().toISOString() // When this price was fetched
+        });
+    } catch (error) {
+        console.error('Error fetching price:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+/**
+ * UPDATED: Creates an order with dynamic pricing
+ * Now the price comes from our centralized configuration instead of being hardcoded
  */
 app.post('/create_order', (req, res) => {
     get_access_token()
         .then(access_token => {
+            // Extract product type from request, default to 'nft'
+            const productType = req.body.product || 'nft';
+            
+            // Get the pricing information from our configuration
+            const pricing = PRICING_CONFIG[productType];
+            
+            if (!pricing) {
+                throw new Error(`Invalid product type: ${productType}`);
+            }
+            
+            // Build the order data using our pricing configuration
+            // This ensures consistency between what the user sees and what gets charged
             let order_data_json = {
                 'intent': req.body.intent.toUpperCase(),
                 'purchase_units': [{
                     'amount': {
-                        'currency_code': 'USD',
-                        'value': '5500.00'
-                    }
+                        'currency_code': pricing.currency,
+                        'value': pricing.value  // Now using our centralized pricing
+                    },
+                    // Optional: Add more details about what's being purchased
+                    'description': pricing.description
                 }]
             };
-            const data = JSON.stringify(order_data_json)
+            
+            const data = JSON.stringify(order_data_json);
 
-            fetch(endpoint_url + '/v2/checkout/orders', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${access_token}`
-                    },
-                    body: data
-                })
-                .then(res => res.json())
-                .then(json => {
-                    res.send(json);
-                })
+            return fetch(endpoint_url + '/v2/checkout/orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${access_token}`
+                },
+                body: data
+            });
+        })
+        .then(res => res.json())
+        .then(json => {
+            res.send(json);
         })
         .catch(err => {
-            console.log(err);
-            res.status(500).send(err)
-        })
+            console.error('Error creating order:', err);
+            res.status(500).send({
+                error: 'Failed to create order',
+                message: err.message
+            });
+        });
+});
+
+/**
+ * OPTIONAL: Add a price update endpoint for administrative purposes
+ * This would allow you to update prices without restarting your server
+ * In production, you'd want to add authentication to this endpoint
+ */
+app.post('/update_price', (req, res) => {
+    try {
+        const { product, value, display, description } = req.body;
+        
+        if (!product || !value) {
+            return res.status(400).json({
+                error: 'Product and value are required'
+            });
+        }
+        
+        // Validate that the value is a valid price format
+        if (!/^\d+\.\d{2}$/.test(value)) {
+            return res.status(400).json({
+                error: 'Price must be in format XX.XX (e.g., 5500.00)'
+            });
+        }
+        
+        // Update the pricing configuration
+        PRICING_CONFIG[product] = {
+            value: value,
+            currency: 'USD', // You could make this configurable too
+            display: display || `$${value}`,
+            description: description || PRICING_CONFIG[product]?.description || 'Product'
+        };
+        
+        res.json({
+            message: `Price updated for ${product}`,
+            new_pricing: PRICING_CONFIG[product]
+        });
+        
+    } catch (error) {
+        console.error('Error updating price:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 /**

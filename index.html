@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta http-equiv="x-ua-compatible" content="ie=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>PPCP Advanced</title>
+    <title>PPCP Advanced - Dynamic Pricing</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -87,6 +87,20 @@
         font-size: 1.5rem;
         font-weight: 700;
         color: var(--text-primary);
+        /* Add loading state styling */
+        min-height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .price-loading {
+        width: 60px;
+        height: 20px;
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+        border-radius: 4px;
       }
 
       /* Form Styles */
@@ -180,6 +194,7 @@
         transition: all 0.15s ease;
         margin-top: 1.5rem;
         font-family: inherit;
+        min-height: 48px;
       }
 
       .pay-button:hover:not(:disabled) {
@@ -285,16 +300,24 @@
         }
       }
 
+      @keyframes loading {
+        0% {
+          background-position: -200% 0;
+        }
+        100% {
+          background-position: 200% 0;
+        }
+      }
+
       @media (max-width: 480px) {
         .container {
           padding: 1rem;
         }
-        
+
         .checkout-card {
           padding: 1.5rem;
         }
-        
-        /* Removed the flex-direction: column rule that was causing vertical stacking */
+
         .card-row {
           gap: 0.5rem;
         }
@@ -308,17 +331,20 @@
         <div class="checkout-header">
           <img src="https://cdn.discordapp.com/attachments/1060825015681028127/1076385063903694908/rauljr7_3d_e83fed6a-69aa-4a6a-b0ec-928edd57aecf.png" alt="Bored Ape NFT" class="product-image">
           <div class="product-title">AI-Generated NFT Bored Ape</div>
-          <div class="product-price">$100.00</div>
+          <!-- Price will be populated dynamically -->
+          <div class="product-price">
+            <div class="price-loading"></div>
+          </div>
         </div>
-        
+
         <!-- Alerts -->
         <div id="alerts"></div>
-        
+
         <!-- Loading State -->
         <div id="loading" class="loading-container">
           <div class="spinner"></div>
         </div>
-        
+
         <!-- Payment Form -->
         <div id="content" class="hide">
           <form id="card-form" class="payment-form">
@@ -327,7 +353,7 @@
               <label for="email" class="form-label">Email</label>
               <input type="email" id="email" class="form-input" placeholder="Enter your email" required>
             </div>
-            
+
             <!-- Card Information -->
             <div class="form-group">
               <label class="form-label">Card information</label>
@@ -337,10 +363,11 @@
                 <div class="card-field" id="cvv"></div>
               </div>
             </div>
-            
-            <button type="submit" class="pay-button">Pay $100.00</button>
+
+            <!-- Button text will be populated dynamically -->
+            <button type="submit" class="pay-button">Loading...</button>
           </form>
-          
+
           <!-- Security Info -->
           <div class="security-info">
             <div class="security-badge">
@@ -355,13 +382,25 @@
     </div>
 
     <script>
-      // Helper / Utility functions
+      // Global variables to store application state
       let current_customer_id;
       let order_id;
+      let currentPrice = null; // This will store the fetched price data
+      let paypal_hosted_fields = null; // Store PayPal fields instance
 
       // Replace this URL with your actual Render.com backend URL
       const API_BASE_URL = "https://paypal-with-nodejs.onrender.com";
 
+      // PayPal SDK configuration
+      const paypal_sdk_url = "https://www.paypal.com/sdk/js";
+      const client_id = "AU23YbLMTqxG3iSvnhcWtix6rGN14uw3axYJgrDe8VqUVng8XiQmmeiaxJWbnpbZP_f4--RTg146F1Mj";
+      const currency = "USD";
+      const intent = "capture";
+
+      /**
+       * Helper function to dynamically load PayPal SDK script
+       * This is essential for PayPal's hosted fields to work properly
+       */
       let script_to_head = (attributes_object) => {
           return new Promise((resolve, reject) => {
             const script = document.createElement('script');
@@ -374,12 +413,58 @@
           });
       }
 
+      /**
+       * NEW FUNCTION: Fetch current price from backend
+       * This is the foundation of our dynamic pricing system
+       * The server controls what price gets displayed and charged
+       */
+      const fetchCurrentPrice = () => {
+        return fetch(`${API_BASE_URL}/get_price`)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then(priceData => {
+            // Store the price data globally for later use
+            currentPrice = priceData;
+            
+            // Update the price display in the header
+            const priceElement = document.querySelector('.product-price');
+            priceElement.innerHTML = priceData.display;
+            
+            // Update the button text with the fetched price
+            const submitBtn = document.querySelector('.pay-button');
+            submitBtn.textContent = `Pay ${priceData.display}`;
+            
+            console.log('Price fetched successfully:', priceData);
+            return priceData;
+          })
+          .catch(error => {
+            console.error('Error fetching price:', error);
+            // Show a user-friendly error message
+            display_error_alert('Unable to load current pricing. Please refresh the page.');
+            throw error;
+          });
+      };
+
+      /**
+       * Reset the purchase button to its normal state
+       * Used after successful payments or errors
+       */
       let reset_purchase_button = () => {
           const btn = document.querySelector("#card-form").querySelector("button[type='submit']");
           btn.removeAttribute("disabled");
-          btn.textContent = "Pay $100.00";
+          // Use the current price data if available, otherwise fallback
+          const buttonText = currentPrice ? `Pay ${currentPrice.display}` : "Pay Now";
+          btn.textContent = buttonText;
       }
 
+      /**
+       * Simulate user authentication check
+       * In a real app, this would verify if user is logged in
+       */
       const is_user_logged_in = () => {
         return new Promise((resolve) => {
           current_customer_id = "";
@@ -387,6 +472,10 @@
         });
       }
 
+      /**
+       * Get PayPal client token for hosted fields
+       * This token allows secure card field rendering
+       */
       const get_client_token = () => {
         return new Promise(async (resolve, reject) => {
           try {
@@ -396,74 +485,127 @@
               body: JSON.stringify({ "customer_id": current_customer_id }),
             });
 
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
             const client_token = await response.text();
             resolve(client_token);
           } catch (error) {
+            console.error('Error getting client token:', error);
             reject(error);
           }
         });
       }
 
+      /**
+       * Event handler for closing alert messages
+       */
       let handle_close = (event) => {
           event.target.closest(".alert").remove();
       }
 
+      /**
+       * Global click handler for alert close buttons
+       */
       let handle_click = (event) => {
           if (event.target.classList.contains("alert-close")) {
               handle_close(event);
           }
       }
 
+      // Register the global click handler
       document.addEventListener("click", handle_click);
 
-      const paypal_sdk_url = "https://www.paypal.com/sdk/js";
-      const client_id = "AU23YbLMTqxG3iSvnhcWtix6rGN14uw3axYJgrDe8VqUVng8XiQmmeiaxJWbnpbZP_f4--RTg146F1Mj";
-      const currency = "USD";
-      const intent = "capture";
-
-      let display_error_alert = () => {
-          document.getElementById("alerts").innerHTML = `<div class="alert alert-error"><button class="alert-close">×</button>An error occurred. Please try again.</div>`;
+      /**
+       * Display error alert with custom message
+       * Now accepts custom error messages for better user experience
+       */
+      let display_error_alert = (message = "An error occurred. Please try again.") => {
+          document.getElementById("alerts").innerHTML = `<div class="alert alert-error"><button class="alert-close">×</button>${message}</div>`;
       }
 
+      /**
+       * Display success message after payment completion
+       * Uses the actual order details from PayPal
+       */
       let display_success_message = (order_details) => {
-          console.log(order_details);
+          console.log('Payment completed:', order_details);
           let intent_object = intent === "authorize" ? "authorizations" : "captures";
           const firstName = order_details?.payer?.name?.given_name || '';
           const lastName = order_details?.payer?.name?.surname || '';
           const amount = order_details.purchase_units[0].payments[intent_object][0].amount.value;
           const currency = order_details.purchase_units[0].payments[intent_object][0].amount.currency_code;
-          
+
           document.getElementById("alerts").innerHTML = `<div class='alert alert-success'>Payment successful! Thank you ${firstName} ${lastName}. Your NFT will be delivered to your email shortly.</div>`;
 
-          //Hide the card form after successful payment
+          // Hide the card form after successful payment
           document.getElementById("card-form").classList.add("hide");
       }
 
-      //PayPal Code - Forms Only
+      /**
+       * MAIN APPLICATION INITIALIZATION
+       * This is the new flow that includes dynamic price fetching:
+       * 1. Check user login status
+       * 2. Fetch current price from server
+       * 3. Get PayPal client token
+       * 4. Load PayPal SDK
+       * 5. Initialize payment form
+       */
+      console.log('Starting application initialization...');
+
       is_user_logged_in()
       .then(() => {
+          console.log('User login check completed');
+          // NEW: Fetch price before proceeding
+          return fetchCurrentPrice();
+      })
+      .then((priceData) => {
+          console.log('Price fetched, now getting client token...');
           return get_client_token();
       })
       .then((client_token) => {
-          return script_to_head({"src": paypal_sdk_url + "?client-id=" + client_id + "&enable-funding=venmo&currency=" + currency + "&intent=" + intent + "&components=hosted-fields", "data-client-token": client_token})
+          console.log('Client token received, loading PayPal SDK...');
+          return script_to_head({
+              "src": paypal_sdk_url + "?client-id=" + client_id + "&enable-funding=venmo&currency=" + currency + "&intent=" + intent + "&components=hosted-fields", 
+              "data-client-token": client_token
+          });
       })
       .then(() => {
-          //Handle loading spinner
+          console.log('PayPal SDK loaded, initializing payment form...');
+          
+          // Hide loading spinner and show the form
           document.getElementById("loading").classList.add("hide");
           document.getElementById("content").classList.remove("hide");
 
-          //Hosted Fields Only
+          // Initialize PayPal Hosted Fields (only if eligible)
           if (paypal.HostedFields.isEligible()) {
-              // Renders card fields
+              console.log('Hosted Fields are eligible, setting up...');
+              
+              // Render PayPal hosted card fields
               paypal_hosted_fields = paypal.HostedFields.render({
                 createOrder: () => {
+                  console.log('Creating order with current price...');
                   return fetch(`${API_BASE_URL}/create_order`, {
                       method: "post", 
                       headers: { "Content-Type": "application/json; charset=utf-8" },
-                      body: JSON.stringify({ "intent": intent })
+                      body: JSON.stringify({ 
+                          "intent": intent,
+                          // Pass the current price to ensure consistency
+                          "amount": currentPrice ? currentPrice.value : null
+                      })
                   })
-                  .then((response) => response.json())
-                  .then((order) => { order_id = order.id; return order.id; });
+                  .then((response) => {
+                      if (!response.ok) {
+                          throw new Error(`HTTP error! status: ${response.status}`);
+                      }
+                      return response.json();
+                  })
+                  .then((order) => { 
+                      order_id = order.id; 
+                      console.log('Order created with ID:', order_id);
+                      return order.id; 
+                  });
                 },
                 styles: {
                   'input': {
@@ -497,12 +639,18 @@
                   }
                 }
               }).then((card_fields) => {
-               document.querySelector("#card-form").addEventListener("submit", (event) => {
+                console.log('Hosted Fields rendered successfully');
+                
+                // Set up form submission handler
+                document.querySelector("#card-form").addEventListener("submit", (event) => {
                   event.preventDefault();
+                  console.log('Form submitted, processing payment...');
+                  
                   const submitBtn = document.querySelector("#card-form").querySelector("button[type='submit']");
                   submitBtn.setAttribute("disabled", "");
                   submitBtn.textContent = "Processing...";
-                  
+
+                  // Submit the card fields data to PayPal
                   card_fields
                     .submit({
                         cardholderName: "Raúl Uriarte, Jr.",
@@ -517,6 +665,7 @@
                       }
                     )
                     .then(() => {
+                      console.log('Card fields submitted, completing order...');
                       return fetch(`${API_BASE_URL}/complete_order`, {
                           method: "post", 
                           headers: { "Content-Type": "application/json; charset=utf-8" },
@@ -526,30 +675,38 @@
                               "email": document.getElementById("email").value
                           })
                       })
-                      .then((response) => response.json())
+                      .then((response) => {
+                          if (!response.ok) {
+                              throw new Error(`HTTP error! status: ${response.status}`);
+                          }
+                          return response.json();
+                      })
                       .then((order_details) => {
+                          console.log('Order completed successfully');
                           display_success_message(order_details);
                        })
                        .catch((error) => {
-                          console.log(error);
-                          display_error_alert();
+                          console.error('Error completing order:', error);
+                          display_error_alert("Payment processing failed. Please try again.");
                           reset_purchase_button();
                        });
                     })
                     .catch((err) => {
-                      console.log(err);
+                      console.error('Error submitting card fields:', err);
                       reset_purchase_button();
-                      display_error_alert();
+                      display_error_alert("Card validation failed. Please check your information.");
                     });
                 });
               });
             } else {
+              console.error('Hosted Fields not eligible in this browser');
               document.getElementById("alerts").innerHTML = `<div class="alert alert-error"><button class="alert-close">×</button>Card payments are not supported in this browser.</div>`;
             }
       })
       .catch((error) => {
+          console.error('Application initialization failed:', error);
           reset_purchase_button();
-          display_error_alert();
+          display_error_alert("Failed to initialize payment system. Please refresh the page.");
       });
     </script>
   </body>
